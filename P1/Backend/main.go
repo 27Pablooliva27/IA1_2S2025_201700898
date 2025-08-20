@@ -58,16 +58,36 @@ func toPrologSintomas(ss []Sintoma) (string, error) {
 }
 
 func allowCORS(w http.ResponseWriter, r *http.Request) bool {
-	origin := os.Getenv("ALLOW_ORIGIN")
-	if origin == "" {
-		origin = "*" // en dev; en prod pon tu URL de Pages
+	allow := os.Getenv("ALLOW_ORIGIN")
+	if allow == "" {
+		allow = "*"
 	}
-	w.Header().Set("Access-Control-Allow-Origin", origin)
-	w.Header().Set("Access-Control-Allow-Credentials", "true")
-	w.Header().Set("Vary", "Origin")
+
+	reqOrigin := r.Header.Get("Origin")
+
+	// Si usamos wildcard, no enviar Allow-Credentials
+	if allow == "*" {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+	} else {
+		// whitelist y espejar exactamente el Origin recibido
+		allowed := map[string]bool{}
+		for _, a := range strings.Split(allow, ",") {
+			allowed[strings.TrimSpace(a)] = true
+		}
+		if allowed[reqOrigin] {
+			w.Header().Set("Access-Control-Allow-Origin", reqOrigin)
+		} else {
+			// (fallback) usa el primero configurado
+			w.Header().Set("Access-Control-Allow-Origin", strings.TrimSpace(strings.Split(allow, ",")[0]))
+		}
+		w.Header().Set("Access-Control-Allow-Credentials", "true")
+	}
+
+	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+	w.Header().Add("Vary", "Origin")
+
 	if r.Method == http.MethodOptions {
-		w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 		w.WriteHeader(http.StatusNoContent)
 		return true
 	}
