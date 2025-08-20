@@ -148,13 +148,61 @@ func diagnosticarHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Salida no-JSON desde Prolog:\n"+out.String(), http.StatusInternalServerError)
 		return
 	}
+	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+	w.Write(out.Bytes())
+}
+
+func catalogosHandler(w http.ResponseWriter, r *http.Request) {
+	if allowCORS(w, r) {
+		return
+	}
+	if r.Method != http.MethodGet {
+		http.Error(w, "solo GET", http.StatusMethodNotAllowed)
+		return
+	}
+
+	swipl := os.Getenv("SWIPL_CMD")
+	if swipl == "" {
+		swipl = "swipl"
+	}
+
+	basePl := os.Getenv("PROLOG_BASE_PL")
+	if basePl == "" {
+		p, _ := filepath.Abs("../Prolog/base.pl")
+		basePl = p
+	}
+	plPath := strings.ReplaceAll(basePl, `\`, `/`)
+
+	goal := fmt.Sprintf("['%s'], base:condiciones_json(J), writeln(J)", plPath)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, swipl, "-q", "-g", goal, "-t", "halt")
+	var out, errb bytes.Buffer
+	cmd.Stdout = &out
+	cmd.Stderr = &errb
+	if err := cmd.Run(); err != nil {
+		msg := "Prolog error: " + err.Error()
+		if e := strings.TrimSpace(errb.String()); e != "" {
+			msg += "\n" + e
+		}
+		http.Error(w, msg, http.StatusInternalServerError)
+		return
+	}
+	// validar JSON
+	var parsed any
+	if err := json.Unmarshal(out.Bytes(), &parsed); err != nil {
+		http.Error(w, "Salida no-JSON desde Prolog:\n"+out.String(), http.StatusInternalServerError)
+		return
+	}
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(out.Bytes())
 }
 
 func main() {
 	http.HandleFunc("/diagnosticar", diagnosticarHandler)
-
+	http.HandleFunc("/catalogos", catalogosHandler)
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
