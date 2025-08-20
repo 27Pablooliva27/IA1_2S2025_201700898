@@ -4,11 +4,14 @@
 
 :- module(base, [
     version/1,
-    diagnosticar/5
+    diagnosticar/5,
+    diagnosticar_json/5,
+    condiciones_json/1
 ]).
 
-:- use_module(library(lists)).  % member/2, append/2, predsort/3, list_to_set/2
-:- use_module(library(http/json)).
+:- use_module(library(lists)).      % member/2, append/2, predsort/3, list_to_set/2
+:- use_module(library(http/json)).  % atom_json_dict/3
+
 version('Tarea1').
 
 % ---------- Hechos de dominio ----------
@@ -50,6 +53,8 @@ trata(loratadina, alergia_estacional).
 contraindicado(paracetamol, enfermedad_hepatica).
 contraindicado(ibuprofeno, gastritis).
 contraindicado(ibuprofeno, alergia_ibuprofeno).
+contraindicado(paracetamol, alergia_paracetamol).
+contraindicado(loratadina,  alergia_loratadina).
 contraindicado(loratadina, glaucoma).
 
 % ---------- Severidades ----------
@@ -204,9 +209,7 @@ diagnosticar(SintomasIn, Alergias, Cronicas, TopN, Resultados) :-
     tomar_k(Ordenados, TopN, Top),
     maplist(armar_resultado(Alergias, Cronicas, Urg, ReglaUrg), Top, Resultados).
 
-
-
-
+% ---------- JSON helpers ----------
 resultado_a_dict(
   resultado(Enf,Score,Pct,Coinc,urg(Nivel,Frase,RegUrg),med(MP,Alt,RegMed),Reglas),
   _{
@@ -224,3 +227,21 @@ diagnosticar_json(Sintomas,Alergias,Cronicas,TopN,JsonAtom) :-
   diagnosticar(Sintomas,Alergias,Cronicas,TopN,Rs),
   maplist(resultado_a_dict, Rs, Dicts),
   atom_json_dict(JsonAtom, Dicts, [as(atom)]).
+
+% ---------- Catálogo de condiciones (para frontend) ----------
+% Lista única de condiciones usadas en contraindicado/2
+condiciones_lista(L) :-
+    ( setof(C, M^(contraindicado(M, C)), L) -> true ; L = [] ).
+
+% Separa por tipo: 'alergia_*' => alergias, el resto => cronicas
+is_alergia(C) :- sub_atom(C, 0, _, _, 'alergia_').
+
+split_condiciones(L, Alergias, Cronicas) :-
+    include(is_alergia, L, Alergias),
+    exclude(is_alergia, L, Cronicas).
+
+% Devuelve JSON con {alergias:[...], cronicas:[...]} en un átomo
+condiciones_json(JsonAtom) :-
+    condiciones_lista(L0),
+    split_condiciones(L0, Alergias, Cronicas),
+    atom_json_dict(JsonAtom, _{alergias:Alergias, cronicas:Cronicas}, [as(atom)]).
