@@ -1,0 +1,386 @@
+<!doctype html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Diagnóstico IA1 (Tarea 1)</title>
+    <style>
+        :root {
+            font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+        }
+
+        body {
+            margin: 0;
+            background: #0b1020;
+            color: #e7eaf3;
+        }
+
+        .wrap {
+            max-width: 860px;
+            margin: 40px auto;
+            padding: 0 16px;
+        }
+
+        .card {
+            background: #121933;
+            border: 1px solid #2a335a;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, .25);
+        }
+
+        h1 {
+            font-size: 20px;
+            margin: 0 0 12px;
+        }
+
+        .row {
+            display: grid;
+            grid-template-columns: 1fr 140px auto;
+            gap: 8px;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        input,
+        select,
+        button {
+            background: #0e1630;
+            color: #e7eaf3;
+            border: 1px solid #2a335a;
+            border-radius: 10px;
+            padding: 10px;
+        }
+
+        button {
+            cursor: pointer;
+        }
+
+        .muted {
+            color: #9aa3c3;
+            font-size: 12px;
+        }
+
+        .results {
+            margin-top: 20px;
+            display: grid;
+            gap: 12px;
+        }
+
+        .res {
+            background: #0f1734;
+            border: 1px solid #2a335a;
+            border-radius: 14px;
+            padding: 14px;
+        }
+
+        .bar {
+            height: 10px;
+            background: #1b2550;
+            border-radius: 999px;
+            overflow: hidden;
+        }
+
+        .bar>div {
+            height: 100%;
+            background: linear-gradient(90deg, #6ee7ff, #7c4dff);
+            width: 0%;
+        }
+
+        .tag {
+            font-size: 12px;
+            padding: 2px 8px;
+            border-radius: 999px;
+            border: 1px solid #334079;
+            background: #152047;
+            display: inline-block;
+            margin-right: 6px;
+        }
+
+        .warn {
+            color: #ffd166;
+        }
+
+        .danger {
+            color: #ff6b6b;
+        }
+
+        .ok {
+            color: #8dd694;
+        }
+
+        .grid2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .hr {
+            height: 1px;
+            background: #283057;
+            margin: 10px 0;
+            border: 0;
+        }
+
+        a {
+            color: #8db3ff;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        .pillbox {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin: 6px 0;
+        }
+
+        .pillx {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 2px 8px;
+            border-radius: 999px;
+            background: #152047;
+            border: 1px solid #334079;
+        }
+
+        .pillx button {
+            background: transparent;
+            border: 0;
+            color: #9aa3c3;
+            cursor: pointer;
+            padding: 0 4px;
+        }
+
+        .pillx button:hover {
+            color: #e7eaf3;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="wrap">
+        <div class="card">
+            <h1>Diagnóstico preliminar</h1>
+            <!-- <div class="muted">Versión Tarea 1 | UI de prueba (conecta a tu backend)</div> -->
+
+            <div id="rows"></div>
+            <button id="add">+ Agregar síntoma</button>
+
+            <div class="grid2" style="margin-top:14px">
+                <div>
+                    <label>Alergias</label>
+                    <div id="alergias-box" class="pillbox"></div>
+                    <input id="alergias-input" list="alergias-list" placeholder="elige o escribe y Enter" />
+                    <datalist id="alergias-list"></datalist>
+                </div>
+
+                <div>
+                    <label>Condiciones crónicas</label>
+                    <div id="cronicas-box" class="pillbox"></div>
+                    <input id="cronicas-input" list="cronicas-list" placeholder="elige o escribe y Enter" />
+                    <datalist id="cronicas-list"></datalist>
+                </div>
+            </div>
+
+            <div style="margin-top:12px; display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                <label>Top N</label>
+                <select id="topn">
+                    <option>3</option>
+                    <option>5</option>
+                    <option>10</option>
+                </select>
+                <!-- <span class="muted">Endpoint API: <code id="api-label"></code></span> -->
+            </div>
+
+            <div style="margin-top:12px; display:flex; gap:8px;">
+                <button id="go">Diagnosticar</button>
+                <button id="demo">Carga demo</button>
+                <button id="limpiar">Limpiar</button>
+            </div>
+
+            <div class="hr"></div>
+            <div id="status" class="muted"></div>
+            <div id="out" class="results"></div>
+        </div>
+
+    </div>
+
+    <script>
+        /* ====== CONFIG API ====== */
+        const API_BASE = 'http://localhost:8080';
+        const API_DIAG = API_BASE + '/diagnosticar';
+        const API_CAT = API_BASE + '/catalogos';
+
+        /* ====== Datos UI ====== */
+        const sintomasCat = [
+            "fiebre", "fiebre_alta", "tos", "congestion", "lagrimeo",
+            "dolor_cabeza", "nauseas", "fotofobia",
+            "dolor_pecho", "dificultad_respirar", "rigidez_nuca"
+        ];
+        const sevs = ["", "leve", "moderado", "severo"]; // "" = sin severidad explícita
+        const rows = document.getElementById('rows');
+
+        function addRow(initSym = "", initSev = "") {
+            const wrap = document.createElement('div');
+            wrap.className = 'row';
+            wrap.innerHTML = `
+    <select class="sym">
+      ${sintomasCat.map(s => `<option ${s === initSym ? "selected" : ""}>${s}</option>`).join("")}
+    </select>
+    <select class="sev">
+      ${sevs.map(v => `<option value="${v}" ${v === initSev ? "selected" : ""}>${v || "(s/ severidad)"}</option>`).join("")}
+    </select>
+    <button class="del" title="Quitar">🗑</button>
+  `;
+            wrap.querySelector('.del').onclick = () => wrap.remove();
+            rows.appendChild(wrap);
+        }
+
+        /* ====== Cargar catálogos desde Prolog ====== */
+        async function cargarCatalogos() {
+            try {
+                const res = await fetch(API_CAT);
+                const data = await res.json(); // {alergias:[], cronicas:[]}
+                document.getElementById('alergias-list').innerHTML =
+                    (data.alergias || []).map(x => `<option value="${x}">`).join('');
+                document.getElementById('cronicas-list').innerHTML =
+                    (data.cronicas || []).map(x => `<option value="${x}">`).join('');
+            } catch (e) { console.warn('No se pudieron cargar catálogos:', e); }
+        }
+
+        /* ====== Pills (chips) para alergias/cronicas ====== */
+        const selAlergias = new Set();
+        const selCronicas = new Set();
+
+        function addPill(container, set, value) {
+            value = (value || "").trim();
+            if (!value) return;
+            if (!/^[a-z_]+$/.test(value)) { alert('Usa minúsculas y _'); return; }
+            if (set.has(value)) return;
+            set.add(value);
+            const pill = document.createElement('span');
+            pill.className = 'pillx';
+            pill.innerHTML = `${value} <button title="Quitar">×</button>`;
+            pill.querySelector('button').onclick = () => { set.delete(value); pill.remove(); };
+            container.appendChild(pill);
+        }
+
+        function wireTokenInput(inputId, boxId, set) {
+            const input = document.getElementById(inputId);
+            const box = document.getElementById(boxId);
+            function commit() { addPill(box, set, input.value); input.value = ''; }
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); commit(); }
+            });
+            input.addEventListener('change', commit); // al elegir del datalist
+        }
+        wireTokenInput('alergias-input', 'alergias-box', selAlergias);
+        wireTokenInput('cronicas-input', 'cronicas-box', selCronicas);
+
+        /* ====== Payload ====== */
+        function buildPayload() {
+            const sint = [...document.querySelectorAll('.row')].map(r => {
+                const nombre = r.querySelector('.sym').value.trim();
+                const sev = r.querySelector('.sev').value.trim();
+                return { nombre, sev };
+            }).filter(x => !!x.nombre);
+
+            return {
+                sintomas: sint,
+                alergias: [...selAlergias],
+                cronicas: [...selCronicas],
+                topN: parseInt(document.getElementById('topn').value, 10)
+            };
+        }
+
+        /* ====== Render ====== */
+        function pctClass(p) { return p >= 70 ? 'ok' : p >= 30 ? 'warn' : ''; }
+        function render(data) {
+            const out = document.getElementById('out');
+            out.innerHTML = "";
+            if (!Array.isArray(data) || !data.length) { out.innerHTML = '<div class="muted">Sin resultados.</div>'; return; }
+            data.forEach(d => {
+                const div = document.createElement('div');
+                div.className = 'res';
+                const urgClass = d.urgencia?.nivel === 'emergencia' ? 'danger' :
+                    d.urgencia?.nivel === 'alta' ? 'warn' : '';
+                div.innerHTML = `
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <div><b>${d.enfermedad}</b></div>
+        <div class="${pctClass(d.porcentaje)}"><b>${d.porcentaje}%</b></div>
+      </div>
+      <div class="bar" style="margin:8px 0 6px;"><div style="width:${d.porcentaje || 0}%"></div></div>
+      <div class="muted">Coincidencias: ${d.coincidencias?.join(", ") || "—"}</div>
+      <div style="margin-top:6px;">
+        <span class="tag ${urgClass}">Urgencia: ${d.urgencia?.nivel}</span>
+        <span class="muted"> ${d.urgencia?.frase || ""}</span>
+      </div>
+      <div style="margin-top:6px;">Medicamento: <b>${d.medicamento?.principal}</b>
+        ${d.medicamento?.alternativas?.length ? ` <span class="muted">(Alternativas: ${d.medicamento.alternativas.join(", ")})</span>` : ""}
+      </div>
+      <div class="muted" style="margin-top:6px;">Reglas: ${d.reglas?.join(", ")}</div>
+    `;
+                requestAnimationFrame(() => { div.querySelector('.bar > div').style.width = (d.porcentaje || 0) + '%'; });
+                out.appendChild(div);
+            });
+        }
+
+        /* ====== Llamado a la API ====== */
+        async function postDiag() {
+            const status = document.getElementById('status');
+            status.textContent = "Consultando...";
+            try {
+                const res = await fetch(API_DIAG, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(buildPayload()),
+                });
+                const txt = await res.text();
+                if (!res.ok) throw new Error(txt);
+                render(JSON.parse(txt));
+                status.textContent = "OK";
+            } catch (e) {
+                status.textContent = "Error: " + e.message;
+            }
+        }
+
+        /* ====== Botones ====== */
+        document.getElementById('add').onclick = () => addRow();
+        document.getElementById('go').onclick = postDiag;
+        document.getElementById('demo').onclick = () => {
+            rows.innerHTML = "";
+            addRow("fiebre", "severo");
+            addRow("tos", "moderado");
+            addRow("congestion", "leve");
+            selAlergias.clear(); selCronicas.clear();
+            document.getElementById('alergias-box').innerHTML = "";
+            document.getElementById('cronicas-box').innerHTML = "";
+            addPill(document.getElementById('alergias-box'), selAlergias, "alergia_ibuprofeno");
+            addPill(document.getElementById('cronicas-box'), selCronicas, "gastritis");
+            postDiag();
+        };
+        document.getElementById('limpiar').onclick = () => {
+            rows.innerHTML = ""; addRow();
+            selAlergias.clear(); selCronicas.clear();
+            document.getElementById('alergias-box').innerHTML = "";
+            document.getElementById('cronicas-box').innerHTML = "";
+            document.getElementById('alergias-input').value = "";
+            document.getElementById('cronicas-input').value = "";
+            document.getElementById('out').innerHTML = "";
+            document.getElementById('status').textContent = "";
+        };
+
+        /* ====== Init ====== */
+        addRow();
+        cargarCatalogos();
+    </script>
+
+</body>
+
+</html>
