@@ -15,47 +15,74 @@
 version('Tarea1').
 
 % ---------- Hechos de dominio ----------
-sintoma(fiebre).
-sintoma(tos).
+% Síntomas
+sintoma(fiebre_alta).          % red flag -> alta
+sintoma(dolor_articulares).
+sintoma(erupcion_cutanea).
 sintoma(dolor_cabeza).
-sintoma(congestion).
-sintoma(lagrimeo).
+sintoma(fiebre_repentina).
+sintoma(dolores_musculares).
+sintoma(ojos_rojos).
 sintoma(nauseas).
-sintoma(fotofobia).
-sintoma(dolor_pecho).          % red flag -> emergencia
-sintoma(dificultad_respirar).  % red flag -> emergencia
-sintoma(rigidez_nuca).         % red flag -> alta
-sintoma(fiebre_alta).          % red flag -> alta (≈ fiebre-severo)
+sintoma(vomito).
+sintoma(diarrea).
+sintoma(fiebre_persistente).
+sintoma(dolor_garganta).
+sintoma(dolor_abdominal).
+sintoma(hemorragia).          % red flag -> emergencia
 
-enfermedad(gripe).
-enfermedad(migrana).
-enfermedad(alergia_estacional).
+% Enfermedades
+enfermedad(chikungunya).
+enfermedad(dengue).
+enfermedad(fiebre_lassa).
 
-sintoma_enfermedad(gripe, fiebre).
-sintoma_enfermedad(gripe, tos).
-sintoma_enfermedad(gripe, congestion).
+% Síntomas por enfermedad
+sintoma_enfermedad(chikungunya, fiebre_alta).
+sintoma_enfermedad(chikungunya, dolor_articulares).
+sintoma_enfermedad(chikungunya, erupcion_cutanea).
+sintoma_enfermedad(chikungunya, dolor_cabeza).
 
-sintoma_enfermedad(migrana, dolor_cabeza).
-sintoma_enfermedad(migrana, nauseas).
-sintoma_enfermedad(migrana, fotofobia).
+sintoma_enfermedad(dengue, fiebre_repentina).
+sintoma_enfermedad(dengue, dolores_musculares).
+sintoma_enfermedad(dengue, ojos_rojos).
+sintoma_enfermedad(dengue, nauseas).
+sintoma_enfermedad(dengue, vomito).
+sintoma_enfermedad(dengue, diarrea).
 
-sintoma_enfermedad(alergia_estacional, congestion).
-sintoma_enfermedad(alergia_estacional, lagrimeo).
+sintoma_enfermedad(fiebre_lassa, fiebre_persistente).
+sintoma_enfermedad(fiebre_lassa, dolor_garganta).
+sintoma_enfermedad(fiebre_lassa, dolor_abdominal).
+sintoma_enfermedad(fiebre_lassa, hemorragia).
 
+% Medicamentos
 medicamento(paracetamol).
+medicamento(hidratacion_oral).
+medicamento(aspirina).
 medicamento(ibuprofeno).
-medicamento(loratadina).
+medicamento(doxicilina).
+medicamento(penicilina).
+medicamento(ribavirina).
+medicamento(manejo_hospitalario).
 
-trata(paracetamol, gripe).
-trata(ibuprofeno, migrana).
-trata(loratadina, alergia_estacional).
+% Tratamientos
+trata(paracetamol, chikungunya).
+trata(hidratacion_oral, chikungunya).
+trata(aspirina, chikungunya).
+trata(ibuprofeno, chikungunya).
 
+trata(doxicilina, dengue).
+trata(penicilina, dengue).
+trata(hidratacion_oral, dengue).
+
+trata(ribavirina, fiebre_lassa).
+trata(manejo_hospitalario, fiebre_lassa).
+
+% Contraindicaciones
 contraindicado(paracetamol, enfermedad_hepatica).
 contraindicado(ibuprofeno, gastritis).
-contraindicado(ibuprofeno, alergia_ibuprofeno).
-contraindicado(paracetamol, alergia_paracetamol).
-contraindicado(loratadina,  alergia_loratadina).
-contraindicado(loratadina, glaucoma).
+contraindicado(aspirina, ulcera_gastrica).
+contraindicado(penicilina, alergia_penicilina).
+contraindicado(ribavirina, embarazo).
 
 % ---------- Severidades ----------
 sev_valor(leve, 1).
