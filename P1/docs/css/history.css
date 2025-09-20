@@ -1,0 +1,23 @@
+.history-container {
+    margin-top: 20px;
+    display: grid;
+    gap: 10px;
+}
+
+.history-item {
+    background: #0f1734;
+    border: 1px solid #2a335a;
+    border-radius: 14px;
+    padding: 14px;
+}
+
+.history-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.history-header button {
+    padding: 4px 12px;
+    font-size: 12px;
+}

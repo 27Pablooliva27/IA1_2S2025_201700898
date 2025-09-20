@@ -1,0 +1,498 @@
+<!doctype html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>MediLogic - Panel de Administración</title>
+    <style>
+        :root {
+            font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+        }
+
+        body {
+            margin: 0;
+            background: #0b1020;
+            color: #e7eaf3;
+        }
+
+        .wrap {
+            max-width: 1024px;
+            margin: 40px auto;
+            padding: 0 16px;
+        }
+
+        .card {
+            background: #121933;
+            border: 1px solid #2a335a;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, .25);
+            margin-bottom: 20px;
+        }
+
+        h1,
+        h2 {
+            font-size: 20px;
+            margin: 0 0 12px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        input,
+        select,
+        button,
+        textarea {
+            background: #0e1630;
+            color: #e7eaf3;
+            border: 1px solid #2a335a;
+            border-radius: 10px;
+            padding: 10px;
+            width: 100%;
+            box-sizing: border-box;
+            margin-bottom: 10px;
+        }
+
+        button {
+            cursor: pointer;
+            width: auto;
+        }
+
+        .muted {
+            color: #9aa3c3;
+            font-size: 12px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+        }
+
+        th,
+        td {
+            text-align: left;
+            padding: 8px;
+            border-bottom: 1px solid #2a335a;
+        }
+
+        th {
+            background: #0e1630;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border-radius: 10px;
+            background: #0e1630;
+        }
+
+        .tab.active {
+            background: #2a335a;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="wrap">
+        <!-- Login -->
+        <div id="login-section" class="card">
+            <h1>MediLogic - Acceso Administrativo</h1>
+            <div>
+                <input type="text" id="username" placeholder="Usuario" />
+                <input type="password" id="password" placeholder="Contraseña" />
+                <button onclick="login()">Iniciar Sesión</button>
+            </div>
+        </div>
+
+        <!-- Panel Principal (oculto hasta login) -->
+        <div id="admin-panel" style="display:none;">
+            <div class="card">
+                <h1>Panel de Administración</h1>
+                <div class="tabs">
+                    <div class="tab active" onclick="showTab('sintomas')">Síntomas</div>
+                    <div class="tab" onclick="showTab('enfermedades')">Enfermedades</div>
+                    <div class="tab" onclick="showTab('medicamentos')">Medicamentos</div>
+                    <div class="tab" onclick="showTab('historico')">Histórico</div>
+                </div>
+
+                <!-- Síntomas -->
+                <div id="sintomas" class="tab-content active">
+                    <div class="grid">
+                        <div>
+                            <h2>Agregar/Editar Síntoma</h2>
+                            <input type="text" id="sintoma-nombre" placeholder="Nombre del síntoma" />
+                            <select id="sintoma-severidad">
+                                <option value="">Sin severidad por defecto</option>
+                                <option value="leve">Leve</option>
+                                <option value="moderado">Moderado</option>
+                                <option value="severo">Severo</option>
+                            </select>
+                            <button onclick="guardarSintoma()">Guardar</button>
+                        </div>
+                        <div>
+                            <h2>Síntomas Registrados</h2>
+                            <table id="sintomas-tabla">
+                                <thead>
+                                    <tr>
+                                        <th>Nombre</th>
+                                        <th>Severidad Default</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Enfermedades -->
+                <div id="enfermedades" class="tab-content">
+                    <div class="grid">
+                        <div>
+                            <h2>Agregar/Editar Enfermedad</h2>
+                            <input type="text" id="enfermedad-nombre" placeholder="Nombre de la enfermedad" />
+                            <select id="enfermedad-sintomas" multiple>
+                                <!-- Se llena dinámicamente -->
+                            </select>
+                            <button onclick="guardarEnfermedad()">Guardar</button>
+                        </div>
+                        <div>
+                            <h2>Enfermedades Registradas</h2>
+                            <table id="enfermedades-tabla">
+                                <thead>
+                                    <tr>
+                                        <th>Nombre</th>
+                                        <th>Síntomas</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Medicamentos -->
+                <div id="medicamentos" class="tab-content">
+                    <div class="grid">
+                        <div>
+                            <h2>Agregar/Editar Medicamento</h2>
+                            <input type="text" id="medicamento-nombre" placeholder="Nombre del medicamento" />
+                            <select id="medicamento-enfermedades" multiple>
+                                <!-- Se llena dinámicamente -->
+                            </select>
+                            <input type="text" id="medicamento-contraindicaciones"
+                                placeholder="Contraindicaciones (separadas por coma)" />
+                            <button onclick="guardarMedicamento()">Guardar</button>
+                        </div>
+                        <div>
+                            <h2>Medicamentos Registrados</h2>
+                            <table id="medicamentos-tabla">
+                                <thead>
+                                    <tr>
+                                        <th>Nombre</th>
+                                        <th>Trata</th>
+                                        <th>Contraindicaciones</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Histórico -->
+                <div id="historico" class="tab-content">
+                    <h2>Histórico de Diagnósticos</h2>
+                    <div class="filters">
+                        <input type="date" id="fecha-desde" />
+                        <input type="date" id="fecha-hasta" />
+                        <button onclick="filtrarHistorico()">Filtrar</button>
+                    </div>
+                    <table id="historico-tabla">
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Síntomas</th>
+                                <th>Diagnóstico</th>
+                                <th>Medicamento</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /* Config */
+        const API_BASE = 'http://localhost:8080';
+
+        /* Gestión de Tabs */
+        function showTab(id) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+            event.target.classList.add('active');
+            document.getElementById(id).classList.add('active');
+        }
+
+        /* Login */
+        async function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            try {
+                const res = await fetch(API_BASE + '/admin/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({ username, password })
+                });
+
+                if (!res.ok) {
+                    throw new Error(await res.text());
+                }
+
+                const data = await res.json();
+                localStorage.setItem('adminToken', data.token);
+
+                document.getElementById('login-section').style.display = 'none';
+                document.getElementById('admin-panel').style.display = 'block';
+                cargarDatos();
+            } catch (e) {
+                alert('Error de login: ' + e.message);
+            }
+        }
+
+        /* Carga Inicial de Datos */
+        async function cargarDatos() {
+            try {
+                const headers = {
+                    'Content-Type': 'application/json',
+                    'Authorization': localStorage.getItem('adminToken') || ''
+                };
+
+                // Hacer las peticiones una por una para ver cuál falla
+                try {
+                    console.log('Cargando síntomas...');
+                    const sintomasResp = await fetch(API_BASE + '/admin/sintomas', {
+                        headers,
+                        credentials: 'include'
+                    });
+                    if (!sintomasResp.ok) {
+                        throw new Error(`Error cargando síntomas: ${await sintomasResp.text()}`);
+                    }
+                    const sintomas = await sintomasResp.json();
+                    console.log('Síntomas cargados:', sintomas);
+
+                    console.log('Cargando enfermedades...');
+                    const enfermedadesResp = await fetch(API_BASE + '/admin/enfermedades', {
+                        headers,
+                        credentials: 'include'
+                    });
+                    if (!enfermedadesResp.ok) {
+                        throw new Error(`Error cargando enfermedades: ${await enfermedadesResp.text()}`);
+                    }
+                    const enfermedades = await enfermedadesResp.json();
+                    console.log('Enfermedades cargadas:', enfermedades);
+
+                    console.log('Cargando medicamentos...');
+                    const medicamentosResp = await fetch(API_BASE + '/admin/medicamentos', {
+                        headers,
+                        credentials: 'include'
+                    });
+                    if (!medicamentosResp.ok) {
+                        throw new Error(`Error cargando medicamentos: ${await medicamentosResp.text()}`);
+                    }
+                    const medicamentos = await medicamentosResp.json();
+
+                actualizarTablaSintomas(sintomas);
+                actualizarTablaEnfermedades(enfermedades);
+                actualizarTablaMedicamentos(medicamentos);
+                actualizarSelectores();
+            } catch (e) {
+                console.error('Error cargando datos:', e);
+            }
+        }
+
+        /* Gestión de Síntomas */
+        function actualizarTablaSintomas(sintomas) {
+            const tbody = document.querySelector('#sintomas-tabla tbody');
+            tbody.innerHTML = sintomas.map(s => `
+                <tr>
+                    <td>${s.nombre}</td>
+                    <td>${s.severidad_default || 'N/A'}</td>
+                    <td class="actions">
+                        <button onclick="editarSintoma('${s.nombre}')">Editar</button>
+                        <button onclick="eliminarSintoma('${s.nombre}')">Eliminar</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        async function guardarSintoma() {
+            const nombre = document.getElementById('sintoma-nombre').value;
+            const severidad = document.getElementById('sintoma-severidad').value;
+
+            try {
+                const res = await fetch(API_BASE + '/admin/sintomas', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': localStorage.getItem('adminToken')
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({ nombre, severidad })
+                });
+                if (!res.ok) throw new Error(await res.text());
+                cargarDatos();
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+        }
+
+        /* Gestión de Enfermedades */
+        function actualizarTablaEnfermedades(enfermedades) {
+            const tbody = document.querySelector('#enfermedades-tabla tbody');
+            tbody.innerHTML = enfermedades.map(e => `
+                <tr>
+                    <td>${e.nombre}</td>
+                    <td>${e.sintomas.join(', ')}</td>
+                    <td class="actions">
+                        <button onclick="editarEnfermedad('${e.nombre}')">Editar</button>
+                        <button onclick="eliminarEnfermedad('${e.nombre}')">Eliminar</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        async function guardarEnfermedad() {
+            const nombre = document.getElementById('enfermedad-nombre').value;
+            const sintomas = Array.from(document.getElementById('enfermedad-sintomas').selectedOptions)
+                .map(opt => opt.value);
+
+            try {
+                const res = await fetch(API_BASE + '/admin/enfermedades', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': localStorage.getItem('adminToken') || ''
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({ nombre, sintomas })
+                });
+                if (!res.ok) throw new Error(await res.text());
+                cargarDatos();
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+        }
+
+        /* Gestión de Medicamentos */
+        function actualizarTablaMedicamentos(medicamentos) {
+            const tbody = document.querySelector('#medicamentos-tabla tbody');
+            tbody.innerHTML = medicamentos.map(m => `
+                <tr>
+                    <td>${m.nombre}</td>
+                    <td>${m.trata.join(', ')}</td>
+                    <td>${m.contraindicaciones.join(', ')}</td>
+                    <td class="actions">
+                        <button onclick="editarMedicamento('${m.nombre}')">Editar</button>
+                        <button onclick="eliminarMedicamento('${m.nombre}')">Eliminar</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        async function guardarMedicamento() {
+            const nombre = document.getElementById('medicamento-nombre').value;
+            const enfermedades = Array.from(document.getElementById('medicamento-enfermedades').selectedOptions)
+                .map(opt => opt.value);
+            const contraindicaciones = document.getElementById('medicamento-contraindicaciones').value
+                .split(',').map(s => s.trim()).filter(Boolean);
+
+            try {
+                const res = await fetch(API_BASE + '/admin/medicamentos', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': localStorage.getItem('adminToken') || ''
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({ nombre, enfermedades, contraindicaciones })
+                });
+                if (!res.ok) throw new Error(await res.text());
+                cargarDatos();
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+        }
+
+        /* Histórico */
+        async function filtrarHistorico() {
+            const desde = document.getElementById('fecha-desde').value;
+            const hasta = document.getElementById('fecha-hasta').value;
+
+            try {
+                const res = await fetch(API_BASE + '/admin/historico?' + new URLSearchParams({ desde, hasta }), {
+                    headers: {
+                        'Authorization': localStorage.getItem('adminToken') || ''
+                    },
+                    credentials: 'include'
+                });
+                const data = await res.json();
+                actualizarTablaHistorico(data);
+            } catch (e) {
+                console.error('Error cargando histórico:', e);
+            }
+        }
+
+        function actualizarTablaHistorico(registros) {
+            const tbody = document.querySelector('#historico-tabla tbody');
+            tbody.innerHTML = registros.map(r => `
+                <tr>
+                    <td>${new Date(r.fecha).toLocaleString()}</td>
+                    <td>${r.sintomas.map(s => s.nombre + (s.sev ? ` (${s.sev})` : '')).join(', ')}</td>
+                    <td>${r.diagnostico.enfermedad} (${r.diagnostico.porcentaje}%)</td>
+                    <td>${r.medicamento}</td>
+                </tr>
+            `).join('');
+        }
+
+        /* Utilidades */
+        function actualizarSelectores() {
+            // TODO: Actualizar los selectores múltiples con datos cargados
+        }
+    </script>
+</body>
+
+</html>
